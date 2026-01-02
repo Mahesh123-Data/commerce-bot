@@ -60,34 +60,6 @@ def whatsapp():
         if msg in COURSES:
             state['course'] = msg
             course = COURSES[msg]
-
-        # Save to Google Sheets
-        try:
-            import gspread
-            from google.oauth2.service_account import Credentials
-            SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-            creds = Credentials.from_service_account_file('./credentials.json', scopes=SCOPES)
-            gc = gspread.authorize(creds)
-            sheet = gc.open_by_key(os.getenv('GOOGLE_SHEETS_ID')).sheet1
-            status = "Interested"
-            notes = f"Course: {course['name']}"
-            row = [
-                datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                phone,
-                state['name'],
-                state['email'],
-                state['phone'],
-                course['name'],
-                course['fee'],
-                status,
-                notes
-            ]
-            sheet.append_row(row)
-            print(f"Lead saved for {state['name']}")
-        except Exception as e:
-            print(f"Sheets save failed (non-critical): {e}")
-
-            
             rmsg.body(f"""✅ **{course['name']}**
 💰 Fee: {course['fee']}
 
@@ -118,6 +90,37 @@ def whatsapp():
     elif state['step'] == 'phone':
         state['phone'] = msg
         course = COURSES[state['course']]
+        
+        print(f"PHONE STEP REACHED: Saving lead for {state['name']}")
+        
+        # Save to Google Sheets
+        try:
+            import gspread
+            from google.oauth2.service_account import Credentials
+            SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+            creds = Credentials.from_service_account_file('./credentials.json', scopes=SCOPES)
+            gc = gspread.authorize(creds)
+            sheet = gc.open_by_key(os.getenv('GOOGLE_SHEETS_ID')).sheet1
+            status = "Interested"
+            notes = f"Course: {course['name']}"
+            row = [
+                datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                phone,
+                state['name'],
+                state['email'],
+                state['phone'],
+                course['name'],
+                course['fee'],
+                status,
+                notes
+            ]
+            sheet.append_row(row)
+            print(f"Lead saved for {state['name']}")
+        except Exception as e:
+            print(f"Sheets save failed (non-critical): {e}")
+        
+        print("SHEETS BLOCK COMPLETE")
+        
         rmsg.body(f"""✅ **Thank you {state['name']}**!
 
 Course: {course['name']}
@@ -143,4 +146,3 @@ def broadcast():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-
